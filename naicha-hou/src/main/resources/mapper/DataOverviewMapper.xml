@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.DataOverviewMapper">
+
+    <!-- 获取用户总数 -->
+    <select id="selectTotalUsers" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM user
+        WHERE deleted = 0
+    </select>
+
+    <!-- 获取时间段内的新增用户数 -->
+    <select id="selectNewUsers" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM user
+        WHERE deleted = 0
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+    </select>
+
+    <!-- 获取上期时间段内的新增用户数 -->
+    <select id="selectPreviousPeriodNewUsers" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM user
+        WHERE deleted = 0
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+    </select>
+
+    <!-- 获取商家总数 -->
+    <select id="selectTotalMerchants" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM merchant
+        WHERE deleted = 0
+    </select>
+
+    <!-- 获取时间段内的新增商家数 -->
+    <select id="selectNewMerchants" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM merchant
+        WHERE deleted = 0
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+    </select>
+
+    <!-- 获取上期时间段内的新增商家数 -->
+    <select id="selectPreviousPeriodNewMerchants" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM merchant
+        WHERE deleted = 0
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+    </select>
+
+    <!-- 获取活跃商家数 -->
+    <select id="selectActiveMerchants" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT merchant_id)
+        FROM `order`
+        WHERE deleted = 0
+        AND status IN (1, 2, 3, 4, 5)
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+    </select>
+
+    <!-- 获取订单总数 -->
+    <select id="selectTotalOrders" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM `order`
+        WHERE deleted = 0
+        AND status IN (1, 2, 3, 4, 5)
+    </select>
+
+    <!-- 获取时间段内的新增订单数 -->
+    <select id="selectNewOrders" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM `order`
+        WHERE deleted = 0
+        AND status IN (1, 2, 3, 4, 5)
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+    </select>
+
+    <!-- 获取上期时间段内的新增订单数 -->
+    <select id="selectPreviousPeriodNewOrders" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM `order`
+        WHERE deleted = 0
+        AND status IN (1, 2, 3, 4, 5)
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+    </select>
+
+    <!-- 获取时间段内的完成订单数 -->
+    <select id="selectCompletedOrders" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM `order`
+        WHERE deleted = 0
+        AND status = 5
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+    </select>
+
+    <!-- 获取交易总额 -->
+    <select id="selectTotalTransactionAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(pay_amount), 0)
+        FROM `order`
+        WHERE deleted = 0
+        AND status IN (1, 2, 3, 4, 5)
+    </select>
+
+    <!-- 获取时间段内的交易额 -->
+    <select id="selectCurrentPeriodTransactionAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(pay_amount), 0)
+        FROM `order`
+        WHERE deleted = 0
+        AND status IN (1, 2, 3, 4, 5)
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+    </select>
+
+    <!-- 获取上期时间段内的交易额 -->
+    <select id="selectPreviousPeriodTransactionAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(pay_amount), 0)
+        FROM `order`
+        WHERE deleted = 0
+        AND status IN (1, 2, 3, 4, 5)
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+    </select>
+
+    <!-- 获取时间段内的平均订单金额 -->
+    <select id="selectAvgOrderAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(AVG(pay_amount), 0)
+        FROM `order`
+        WHERE deleted = 0
+        AND status IN (1, 2, 3, 4, 5)
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+    </select>
+
+    <!-- 获取销量趋势数据 -->
+    <select id="selectSalesTrend" resultType="java.util.HashMap">
+        SELECT
+        <choose>
+            <when test="period == 'day'">
+                DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+            </when>
+            <when test="period == 'week'">
+                CONCAT(YEAR(created_at), '-W', LPAD(WEEK(created_at, 1), 2, '0')) as date,
+            </when>
+            <when test="period == 'month'">
+                DATE_FORMAT(created_at, '%Y-%m') as date,
+            </when>
+            <when test="period == 'year'">
+                DATE_FORMAT(created_at, '%Y') as date,
+            </when>
+            <otherwise>
+                DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+            </otherwise>
+        </choose>
+        COUNT(*) as count
+        FROM `order`
+        WHERE deleted = 0
+        AND status IN (1, 2, 3, 4, 5)
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+        GROUP BY
+        <choose>
+            <when test="period == 'day'">
+                DATE_FORMAT(created_at, '%Y-%m-%d')
+            </when>
+            <when test="period == 'week'">
+                YEAR(created_at), WEEK(created_at, 1)
+            </when>
+            <when test="period == 'month'">
+                DATE_FORMAT(created_at, '%Y-%m')
+            </when>
+            <when test="period == 'year'">
+                DATE_FORMAT(created_at, '%Y')
+            </when>
+            <otherwise>
+                DATE_FORMAT(created_at, '%Y-%m-%d')
+            </otherwise>
+        </choose>
+        ORDER BY date ASC
+    </select>
+
+    <!-- 获取交易额趋势数据 -->
+    <select id="selectTransactionTrend" resultType="java.util.HashMap">
+        SELECT
+        <choose>
+            <when test="period == 'day'">
+                DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+            </when>
+            <when test="period == 'week'">
+                CONCAT(YEAR(created_at), '-W', LPAD(WEEK(created_at, 1), 2, '0')) as date,
+            </when>
+            <when test="period == 'month'">
+                DATE_FORMAT(created_at, '%Y-%m') as date,
+            </when>
+            <when test="period == 'year'">
+                DATE_FORMAT(created_at, '%Y') as date,
+            </when>
+            <otherwise>
+                DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+            </otherwise>
+        </choose>
+        COALESCE(SUM(pay_amount), 0) as amount
+        FROM `order`
+        WHERE deleted = 0
+        AND status IN (1, 2, 3, 4, 5)
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+        GROUP BY
+        <choose>
+            <when test="period == 'day'">
+                DATE_FORMAT(created_at, '%Y-%m-%d')
+            </when>
+            <when test="period == 'week'">
+                YEAR(created_at), WEEK(created_at, 1)
+            </when>
+            <when test="period == 'month'">
+                DATE_FORMAT(created_at, '%Y-%m')
+            </when>
+            <when test="period == 'year'">
+                DATE_FORMAT(created_at, '%Y')
+            </when>
+            <otherwise>
+                DATE_FORMAT(created_at, '%Y-%m-%d')
+            </otherwise>
+        </choose>
+        ORDER BY date ASC
+    </select>
+
+    <!-- 获取订单状态占比数据 -->
+    <select id="selectOrderStatusDistribution" resultType="java.util.HashMap">
+        SELECT
+        CASE status
+            WHEN 0 THEN '待支付'
+            WHEN 1 THEN '已支付'
+            WHEN 2 THEN '已接单'
+            WHEN 3 THEN '制作中'
+            WHEN 4 THEN '已发货'
+            WHEN 5 THEN '已完成'
+            WHEN 6 THEN '已取消'
+            WHEN 7 THEN '已退款'
+            ELSE '未知'
+        END as name,
+        COUNT(*) as count,
+        ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM `order` WHERE deleted = 0 AND created_at >= #{startTime} AND created_at &lt;= #{endTime}), 2) as percentage
+        FROM `order`
+        WHERE deleted = 0
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+        GROUP BY status
+        ORDER BY count DESC
+    </select>
+
+    <!-- 获取用户增长趋势数据 -->
+    <select id="selectUserGrowthTrend" resultType="java.util.HashMap">
+        SELECT
+        <choose>
+            <when test="period == 'day'">
+                DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+            </when>
+            <when test="period == 'week'">
+                CONCAT(YEAR(created_at), '-W', LPAD(WEEK(created_at, 1), 2, '0')) as date,
+            </when>
+            <when test="period == 'month'">
+                DATE_FORMAT(created_at, '%Y-%m') as date,
+            </when>
+            <when test="period == 'year'">
+                DATE_FORMAT(created_at, '%Y') as date,
+            </when>
+            <otherwise>
+                DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+            </otherwise>
+        </choose>
+        COUNT(*) as count
+        FROM user
+        WHERE deleted = 0
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+        GROUP BY
+        <choose>
+            <when test="period == 'day'">
+                DATE_FORMAT(created_at, '%Y-%m-%d')
+            </when>
+            <when test="period == 'week'">
+                YEAR(created_at), WEEK(created_at, 1)
+            </when>
+            <when test="period == 'month'">
+                DATE_FORMAT(created_at, '%Y-%m')
+            </when>
+            <when test="period == 'year'">
+                DATE_FORMAT(created_at, '%Y')
+            </when>
+            <otherwise>
+                DATE_FORMAT(created_at, '%Y-%m-%d')
+            </otherwise>
+        </choose>
+        ORDER BY date ASC
+    </select>
+
+</mapper>
+

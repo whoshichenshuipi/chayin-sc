@@ -1,0 +1,175 @@
+/**
+ * Element Plus 主题定制
+ * 基于红绿色系的设计系统
+ */
+
+/* ========== 主色调 ========== */
+:root {
+  /* Element Plus 主色变量覆盖 */
+  --el-color-primary: #E63946;
+  --el-color-primary-light-3: #FF6B7A;
+  --el-color-primary-light-5: #FF8A94;
+  --el-color-primary-light-7: #FFA9AE;
+  --el-color-primary-light-8: #FFC8CB;
+  --el-color-primary-light-9: #FFE5E8;
+  --el-color-primary-dark-2: #C91827;
+  
+  /* 成功色使用绿色 */
+  --el-color-success: #2A9D8F;
+  --el-color-success-light-3: #4FB3A6;
+  --el-color-success-light-5: #6EC9BD;
+  --el-color-success-light-7: #8DDFD4;
+  --el-color-success-light-8: #ACE8E0;
+  --el-color-success-light-9: #CBF1EC;
+  --el-color-success-dark-2: #1E7167;
+  
+  /* 圆角 */
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+  --el-border-radius-large: 12px;
+  
+  /* 字体 */
+  --el-font-family: var(--font-family);
+  --el-font-size-base: var(--font-size-base);
+}
+
+/* ========== 按钮样式定制 ========== */
+.el-button {
+  border-radius: var(--radius-lg);
+  font-weight: var(--font-weight-medium);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.el-button--primary {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.el-button--primary:hover {
+  background-color: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.el-button--success {
+  background-color: var(--color-secondary);
+  border-color: var(--color-secondary);
+}
+
+.el-button--success:hover {
+  background-color: var(--color-secondary-dark);
+  border-color: var(--color-secondary-dark);
+}
+
+/* ========== 卡片样式定制 ========== */
+.el-card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  border: none;
+  transition: box-shadow var(--transition-base);
+}
+
+.el-card:hover {
+  box-shadow: var(--shadow-elevated);
+}
+
+/* ========== 输入框样式定制 ========== */
+.el-input__wrapper {
+  border-radius: var(--radius-lg);
+  box-shadow: 0 0 0 1px var(--color-bg-gray-light) inset;
+  transition: all var(--transition-fast);
+}
+
+.el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--color-primary-light) inset;
+}
+
+.el-input.is-focus .el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--color-primary) inset;
+}
+
+/* ========== 标签样式定制 ========== */
+.el-tag {
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ========== 菜单样式定制 ========== */
+.el-menu {
+  border: none;
+}
+
+.el-menu-item {
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.el-menu-item:hover {
+  background-color: var(--color-primary-lighter);
+  color: var(--color-primary);
+}
+
+.el-menu-item.is-active {
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ========== 对话框样式定制 ========== */
+.el-dialog {
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+}
+
+.el-dialog__header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--color-bg-gray-light);
+}
+
+.el-dialog__title {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-xl);
+}
+
+/* ========== 消息提示样式定制 ========== */
+.el-message {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.el-notification {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ========== 轮播图样式定制 ========== */
+.el-carousel__indicator {
+  button {
+    border-radius: var(--radius-full);
+  }
+}
+
+/* ========== 表格样式定制 ========== */
+.el-table {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.el-table th {
+  background-color: var(--color-bg-gray-light);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ========== 响应式适配 ========== */
+@media (max-width: 768px) {
+  .el-button {
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: var(--font-size-sm);
+  }
+  
+  .el-card {
+    padding: var(--spacing-md);
+  }
+}

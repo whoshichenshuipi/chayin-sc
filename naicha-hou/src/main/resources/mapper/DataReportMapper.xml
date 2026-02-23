@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.DataReportMapper">
+
+    <!-- 获取报表摘要数据 -->
+    <select id="selectReportSummary" resultType="java.util.HashMap">
+        SELECT
+            (SELECT COUNT(*) FROM user WHERE deleted = 0) as totalUsers,
+            (SELECT COUNT(*) FROM `order` WHERE deleted = 0 AND status IN (1, 2, 3, 4, 5) AND created_at >= #{startTime} AND created_at &lt;= #{endTime}) as totalOrders,
+            (SELECT COALESCE(SUM(pay_amount), 0) FROM `order` WHERE deleted = 0 AND status IN (1, 2, 3, 4, 5) AND created_at >= #{startTime} AND created_at &lt;= #{endTime}) as totalAmount,
+            (SELECT COUNT(DISTINCT merchant_id) FROM `order` WHERE deleted = 0 AND status IN (1, 2, 3, 4, 5) AND created_at >= #{startTime} AND created_at &lt;= #{endTime}) as activeMerchants
+    </select>
+
+    <!-- 获取销量趋势数据（用于报表） -->
+    <select id="selectSalesTrendForReport" resultType="java.util.HashMap">
+        SELECT
+        <choose>
+            <when test="period == 'daily'">
+                DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+            </when>
+            <when test="period == 'weekly'">
+                CONCAT(YEAR(created_at), '-W', LPAD(WEEK(created_at, 1), 2, '0')) as date,
+            </when>
+            <when test="period == 'monthly'">
+                DATE_FORMAT(created_at, '%Y-%m') as date,
+            </when>
+            <when test="period == 'yearly'">
+                DATE_FORMAT(created_at, '%Y') as date,
+            </when>
+            <otherwise>
+                DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+            </otherwise>
+        </choose>
+        COUNT(*) as count
+        FROM `order`
+        WHERE deleted = 0
+        AND status IN (1, 2, 3, 4, 5)
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+        GROUP BY
+        <choose>
+            <when test="period == 'daily'">
+                DATE_FORMAT(created_at, '%Y-%m-%d')
+            </when>
+            <when test="period == 'weekly'">
+                YEAR(created_at), WEEK(created_at, 1)
+            </when>
+            <when test="period == 'monthly'">
+                DATE_FORMAT(created_at, '%Y-%m')
+            </when>
+            <when test="period == 'yearly'">
+                DATE_FORMAT(created_at, '%Y')
+            </when>
+            <otherwise>
+                DATE_FORMAT(created_at, '%Y-%m-%d')
+            </otherwise>
+        </choose>
+        ORDER BY date ASC
+    </select>
+
+    <!-- 获取上期销量数据 -->
+    <select id="selectPreviousPeriodSales" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM `order`
+        WHERE deleted = 0
+        AND status IN (1, 2, 3, 4, 5)
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+    </select>
+
+    <!-- 获取交易额趋势数据（用于报表） -->
+    <select id="selectTransactionTrendForReport" resultType="java.util.HashMap">
+        SELECT
+        <choose>
+            <when test="period == 'daily'">
+                DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+            </when>
+            <when test="period == 'weekly'">
+                CONCAT(YEAR(created_at), '-W', LPAD(WEEK(created_at, 1), 2, '0')) as date,
+            </when>
+            <when test="period == 'monthly'">
+                DATE_FORMAT(created_at, '%Y-%m') as date,
+            </when>
+            <when test="period == 'yearly'">
+                DATE_FORMAT(created_at, '%Y') as date,
+            </when>
+            <otherwise>
+                DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+            </otherwise>
+        </choose>
+        COALESCE(SUM(pay_amount), 0) as amount
+        FROM `order`
+        WHERE deleted = 0
+        AND status IN (1, 2, 3, 4, 5)
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+        GROUP BY
+        <choose>
+            <when test="period == 'daily'">
+                DATE_FORMAT(created_at, '%Y-%m-%d')
+            </when>
+            <when test="period == 'weekly'">
+                YEAR(created_at), WEEK(created_at, 1)
+            </when>
+            <when test="period == 'monthly'">
+                DATE_FORMAT(created_at, '%Y-%m')
+            </when>
+            <when test="period == 'yearly'">
+                DATE_FORMAT(created_at, '%Y')
+            </when>
+            <otherwise>
+                DATE_FORMAT(created_at, '%Y-%m-%d')
+            </otherwise>
+        </choose>
+        ORDER BY date ASC
+    </select>
+
+    <!-- 获取上期交易额 -->
+    <select id="selectPreviousPeriodTransaction" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(pay_amount), 0)
+        FROM `order`
+        WHERE deleted = 0
+        AND status IN (1, 2, 3, 4, 5)
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+    </select>
+
+    <!-- 获取订单状态分布数据（用于报表） -->
+    <select id="selectOrderStatusForReport" resultType="java.util.HashMap">
+        SELECT
+        CASE status
+            WHEN 0 THEN '待支付'
+            WHEN 1 THEN '已支付'
+            WHEN 2 THEN '已接单'
+            WHEN 3 THEN '制作中'
+            WHEN 4 THEN '已发货'
+            WHEN 5 THEN '已完成'
+            WHEN 6 THEN '已取消'
+            WHEN 7 THEN '已退款'
+            ELSE '未知'
+        END as name,
+        COUNT(*) as count,
+        ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM `order` WHERE deleted = 0 AND created_at >= #{startTime} AND created_at &lt;= #{endTime}), 2) as percentage,
+        CASE status
+            WHEN 5 THEN '#67c23a'
+            WHEN 1 THEN '#409eff'
+            WHEN 2 THEN '#409eff'
+            WHEN 3 THEN '#409eff'
+            WHEN 4 THEN '#409eff'
+            WHEN 6 THEN '#f56c6c'
+            WHEN 0 THEN '#e6a23c'
+            ELSE '#909399'
+        END as color
+        FROM `order`
+        WHERE deleted = 0
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+        GROUP BY status
+        ORDER BY count DESC
+    </select>
+
+    <!-- 获取用户增长趋势数据（用于报表） -->
+    <select id="selectUserGrowthTrendForReport" resultType="java.util.HashMap">
+        SELECT
+        <choose>
+            <when test="period == 'daily'">
+                DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+            </when>
+            <when test="period == 'weekly'">
+                CONCAT(YEAR(created_at), '-W', LPAD(WEEK(created_at, 1), 2, '0')) as date,
+            </when>
+            <when test="period == 'monthly'">
+                DATE_FORMAT(created_at, '%Y-%m') as date,
+            </when>
+            <when test="period == 'yearly'">
+                DATE_FORMAT(created_at, '%Y') as date,
+            </when>
+            <otherwise>
+                DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+            </otherwise>
+        </choose>
+        COUNT(*) as count
+        FROM user
+        WHERE deleted = 0
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+        GROUP BY
+        <choose>
+            <when test="period == 'daily'">
+                DATE_FORMAT(created_at, '%Y-%m-%d')
+            </when>
+            <when test="period == 'weekly'">
+                YEAR(created_at), WEEK(created_at, 1)
+            </when>
+            <when test="period == 'monthly'">
+                DATE_FORMAT(created_at, '%Y-%m')
+            </when>
+            <when test="period == 'yearly'">
+                DATE_FORMAT(created_at, '%Y')
+            </when>
+            <otherwise>
+                DATE_FORMAT(created_at, '%Y-%m-%d')
+            </otherwise>
+        </choose>
+        ORDER BY date ASC
+    </select>
+
+    <!-- 获取上期新增用户数 -->
+    <select id="selectPreviousPeriodNewUsers" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM user
+        WHERE deleted = 0
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+    </select>
+
+    <!-- 获取活跃用户数 -->
+    <select id="selectActiveUsers" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT user_id)
+        FROM `order`
+        WHERE deleted = 0
+        AND status IN (1, 2, 3, 4, 5)
+        AND created_at >= #{startTime}
+        AND created_at &lt;= #{endTime}
+    </select>
+
+    <!-- 获取报表详细表格数据 -->
+    <select id="selectReportTableData" resultType="java.util.HashMap">
+        SELECT
+        order_date as date,
+        COALESCE(user_count.newUsers, 0) as newUsers,
+        order_stats.newOrders,
+        order_stats.sales,
+        order_stats.transaction,
+        order_stats.avgOrderValue,
+        order_stats.completionRate
+        FROM (
+            SELECT
+            <choose>
+                <when test="period == 'daily'">
+                    DATE_FORMAT(created_at, '%Y-%m-%d') as order_date,
+                </when>
+                <when test="period == 'weekly'">
+                    CONCAT(YEAR(created_at), '-W', LPAD(WEEK(created_at, 1), 2, '0')) as order_date,
+                </when>
+                <when test="period == 'monthly'">
+                    DATE_FORMAT(created_at, '%Y-%m') as order_date,
+                </when>
+                <when test="period == 'yearly'">
+                    DATE_FORMAT(created_at, '%Y') as order_date,
+                </when>
+                <otherwise>
+                    DATE_FORMAT(created_at, '%Y-%m-%d') as order_date,
+                </otherwise>
+            </choose>
+            COUNT(*) as newOrders,
+            COUNT(*) as sales,
+            COALESCE(SUM(pay_amount), 0) as transaction,
+            COALESCE(AVG(pay_amount), 0) as avgOrderValue,
+            ROUND(SUM(CASE WHEN status = 5 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as completionRate
+            FROM `order`
+            WHERE deleted = 0
+            AND status IN (1, 2, 3, 4, 5)
+            AND created_at >= #{startTime}
+            AND created_at &lt;= #{endTime}
+            GROUP BY order_date
+        ) order_stats
+        LEFT JOIN (
+            SELECT
+            <choose>
+                <when test="period == 'daily'">
+                    DATE_FORMAT(created_at, '%Y-%m-%d') as user_date,
+                </when>
+                <when test="period == 'weekly'">
+                    CONCAT(YEAR(created_at), '-W', LPAD(WEEK(created_at, 1), 2, '0')) as user_date,
+                </when>
+                <when test="period == 'monthly'">
+                    DATE_FORMAT(created_at, '%Y-%m') as user_date,
+                </when>
+                <when test="period == 'yearly'">
+                    DATE_FORMAT(created_at, '%Y') as user_date,
+                </when>
+                <otherwise>
+                    DATE_FORMAT(created_at, '%Y-%m-%d') as user_date,
+                </otherwise>
+            </choose>
+            COUNT(*) as newUsers
+            FROM user
+            WHERE deleted = 0
+            AND created_at >= #{startTime}
+            AND created_at &lt;= #{endTime}
+            GROUP BY user_date
+        ) user_count ON order_stats.order_date = user_count.user_date
+        ORDER BY order_date ASC
+    </select>
+
+</mapper>
+

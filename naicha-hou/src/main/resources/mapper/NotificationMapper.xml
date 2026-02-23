@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.NotificationMapper">
+
+    <!-- 通知结果映射 -->
+    <resultMap id="NotificationDTOMap" type="com.naicha.hou.dto.NotificationDTO">
+        <id column="id" property="id"/>
+        <result column="recipient_id" property="recipientId"/>
+        <result column="recipient_type" property="recipientType"/>
+        <result column="type" property="type"/>
+        <result column="type_description" property="typeDescription"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="priority" property="priority"/>
+        <result column="priority_description" property="priorityDescription"/>
+        <result column="is_read" property="isRead"/>
+        <result column="related_id" property="relatedId"/>
+        <result column="related_type" property="relatedType"/>
+        <result column="actions" property="actions" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+        <result column="extra_data" property="extraData" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <!-- 分页查询通知列表 -->
+    <select id="selectNotificationPage" resultMap="NotificationDTOMap">
+        SELECT
+            n.id,
+            n.recipient_id,
+            n.recipient_type,
+            n.type,
+            CASE n.type
+                WHEN 'merchant_application' THEN '商家入驻申请'
+                WHEN 'user_appeal' THEN '消费者申诉'
+                WHEN 'system_error' THEN '系统故障'
+                WHEN 'compliance_report' THEN '合规检查报告'
+                WHEN 'new_order' THEN '新订单提醒'
+                WHEN 'order_cancel' THEN '订单取消申请'
+                WHEN 'after_sale' THEN '售后申请'
+                WHEN 'stock_warning' THEN '库存预警'
+                WHEN 'settlement' THEN '结算单生成'
+                ELSE '未知'
+            END as type_description,
+            n.title,
+            n.content,
+            n.priority,
+            CASE n.priority
+                WHEN 1 THEN '低'
+                WHEN 2 THEN '普通'
+                WHEN 3 THEN '重要'
+                WHEN 4 THEN '紧急'
+                ELSE '未知'
+            END as priority_description,
+            n.is_read,
+            n.related_id,
+            n.related_type,
+            n.actions,
+            n.extra_data,
+            n.created_at
+        FROM notification n
+        WHERE n.deleted = 0
+        <if test="query.recipientId != null">
+            AND n.recipient_id = #{query.recipientId}
+        </if>
+        <if test="query.recipientType != null and query.recipientType != ''">
+            AND n.recipient_type = #{query.recipientType}
+        </if>
+        <if test="query.type != null and query.type != ''">
+            AND n.type = #{query.type}
+        </if>
+        <if test="query.priority != null">
+            AND n.priority = #{query.priority}
+        </if>
+        <if test="query.isRead != null">
+            AND n.is_read = #{query.isRead}
+        </if>
+        ORDER BY n.priority DESC, n.created_at DESC
+    </select>
+
+    <!-- 查询未读通知数量 -->
+    <select id="countUnread" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM notification
+        WHERE deleted = 0
+        AND is_read = 0
+        <if test="recipientId != null">
+            AND recipient_id = #{recipientId}
+        </if>
+        <if test="recipientType != null and recipientType != ''">
+            AND recipient_type = #{recipientType}
+        </if>
+    </select>
+
+    <!-- 统计通知数量（按类型） -->
+    <select id="countByType" resultType="java.util.Map">
+        SELECT
+            type,
+            COUNT(*) as count
+        FROM notification
+        WHERE deleted = 0
+        <if test="recipientId != null">
+            AND recipient_id = #{recipientId}
+        </if>
+        <if test="recipientType != null and recipientType != ''">
+            AND recipient_type = #{recipientType}
+        </if>
+        GROUP BY type
+    </select>
+
+    <!-- 统计通知数量（按优先级） -->
+    <select id="countByPriority" resultType="java.util.Map">
+        SELECT
+            priority,
+            COUNT(*) as count
+        FROM notification
+        WHERE deleted = 0
+        <if test="recipientId != null">
+            AND recipient_id = #{recipientId}
+        </if>
+        <if test="recipientType != null and recipientType != ''">
+            AND recipient_type = #{recipientType}
+        </if>
+        GROUP BY priority
+    </select>
+
+    <!-- 批量标记为已读 -->
+    <update id="batchMarkAsRead">
+        UPDATE notification
+        SET is_read = 1,
+            updated_at = NOW()
+        WHERE deleted = 0
+        AND recipient_id = #{recipientId}
+        AND recipient_type = #{recipientType}
+        <if test="ids != null and ids.size() > 0">
+            AND id IN
+            <foreach collection="ids" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+    </update>
+
+    <!-- 标记所有为已读 -->
+    <update id="markAllAsRead">
+        UPDATE notification
+        SET is_read = 1,
+            updated_at = NOW()
+        WHERE deleted = 0
+        AND recipient_id = #{recipientId}
+        AND recipient_type = #{recipientType}
+        AND is_read = 0
+    </update>
+
+</mapper>
+

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.SystemConfigMapper">
+
+    <!-- 根据配置类型和配置键查询配置 -->
+    <select id="selectByTypeAndKey" resultType="com.naicha.hou.entity.SystemConfig">
+        SELECT * FROM system_config 
+        WHERE config_type = #{configType} 
+          AND config_key = #{configKey} 
+          AND deleted = 0
+        LIMIT 1
+    </select>
+
+</mapper>
+

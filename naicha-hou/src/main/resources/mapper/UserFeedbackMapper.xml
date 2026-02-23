@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.UserFeedbackMapper">
+
+    <!-- 反馈结果映射 -->
+    <resultMap id="UserFeedbackDTOMap" type="com.naicha.hou.dto.UserFeedbackDTO">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="user_name" property="userName"/>
+        <result column="user_phone" property="userPhone"/>
+        <result column="type" property="type"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="status" property="status"/>
+        <result column="assignee" property="assignee"/>
+        <result column="assign_note" property="assignNote"/>
+        <result column="result" property="result"/>
+        <result column="submit_time" property="submitTime"/>
+        <result column="assign_time" property="assignTime"/>
+        <result column="complete_time" property="completeTime"/>
+    </resultMap>
+
+    <!-- 分页查询用户反馈列表 -->
+    <select id="selectFeedbackPage" resultMap="UserFeedbackDTOMap">
+        SELECT 
+            f.id,
+            f.user_id,
+            u.nickname as user_name,
+            u.phone as user_phone,
+            f.type,
+            f.title,
+            f.content,
+            f.status,
+            f.assignee,
+            f.assign_note,
+            f.result,
+            f.submit_time,
+            f.assign_time,
+            f.complete_time
+        FROM user_feedback f
+        LEFT JOIN user u ON f.user_id = u.id
+        WHERE f.deleted = 0
+        <if test="query.type != null and query.type != ''">
+            AND f.type = #{query.type}
+        </if>
+        <if test="query.status != null and query.status != ''">
+            AND f.status = #{query.status}
+        </if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (f.title LIKE CONCAT('%', #{query.keyword}, '%') 
+            OR f.content LIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        ORDER BY f.submit_time DESC
+    </select>
+
+    <!-- 根据反馈ID查询反馈详情 -->
+    <select id="selectFeedbackDetail" resultMap="UserFeedbackDTOMap">
+        SELECT 
+            f.id,
+            f.user_id,
+            u.nickname as user_name,
+            u.phone as user_phone,
+            f.type,
+            f.title,
+            f.content,
+            f.status,
+            f.assignee,
+            f.assign_note,
+            f.result,
+            f.submit_time,
+            f.assign_time,
+            f.complete_time
+        FROM user_feedback f
+        LEFT JOIN user u ON f.user_id = u.id
+        WHERE f.id = #{feedbackId} AND f.deleted = 0
+    </select>
+
+</mapper>
+

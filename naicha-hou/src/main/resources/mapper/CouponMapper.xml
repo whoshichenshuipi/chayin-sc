@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.CouponMapper">
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        c.id, c.merchant_id, c.name, c.type, c.threshold, c.discount,
+        c.total_quantity, c.remaining_quantity, c.product_scope, c.description,
+        c.receive_start_time, c.receive_end_time, c.valid_start_time, c.valid_end_time,
+        c.status, c.created_at, c.updated_at
+    </sql>
+
+    <!-- 分页查询优惠券列表 -->
+    <select id="selectCouponPage" resultType="com.naicha.hou.dto.CouponDTO">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM coupon c
+        WHERE c.deleted = 0
+        <if test="query.merchantId != null">
+            AND c.merchant_id = #{query.merchantId}
+        </if>
+        <if test="query.name != null and query.name != ''">
+            AND c.name LIKE CONCAT('%', #{query.name}, '%')
+        </if>
+        <if test="query.status != null and query.status != ''">
+            AND c.status = #{query.status}
+        </if>
+        ORDER BY c.created_at DESC
+    </select>
+
+    <!-- 根据ID查询优惠券详情 -->
+    <select id="selectCouponDetail" resultType="com.naicha.hou.dto.CouponDTO">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM coupon c
+        WHERE c.id = #{couponId}
+        AND c.deleted = 0
+    </select>
+
+    <!-- 查询优惠券的领取人数 -->
+    <select id="selectReceivedCount" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT user_id)
+        FROM coupon_user
+        WHERE coupon_id = #{couponId}
+    </select>
+
+    <!-- 查询优惠券的使用人数 -->
+    <select id="selectUsedCount" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT user_id)
+        FROM coupon_user
+        WHERE coupon_id = #{couponId}
+        AND status = 'used'
+    </select>
+
+</mapper>
+

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.PromotionMapper">
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        p.id, p.merchant_id, p.name, p.type, p.description,
+        p.discount_rate, p.full_reduce_rules, p.allow_coupon, p.gift_type,
+        p.participation_limit, p.start_time, p.end_time, p.status,
+        p.participant_count, p.order_count, p.sales_amount, p.discount_amount,
+        p.created_at, p.updated_at
+    </sql>
+
+    <!-- 分页查询促销活动列表 -->
+    <select id="selectPromotionPage" resultType="com.naicha.hou.dto.PromotionDTO">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM promotion p
+        WHERE p.deleted = 0
+        <if test="query.merchantId != null">
+            AND p.merchant_id = #{query.merchantId}
+        </if>
+        <if test="query.name != null and query.name != ''">
+            AND p.name LIKE CONCAT('%', #{query.name}, '%')
+        </if>
+        <if test="query.type != null and query.type != ''">
+            AND p.type = #{query.type}
+        </if>
+        <if test="query.status != null and query.status != ''">
+            AND p.status = #{query.status}
+        </if>
+        ORDER BY p.created_at DESC
+    </select>
+
+    <!-- 根据ID查询促销活动详情 -->
+    <select id="selectPromotionDetail" resultType="com.naicha.hou.dto.PromotionDTO">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM promotion p
+        WHERE p.id = #{promotionId}
+        AND p.deleted = 0
+    </select>
+
+</mapper>
+

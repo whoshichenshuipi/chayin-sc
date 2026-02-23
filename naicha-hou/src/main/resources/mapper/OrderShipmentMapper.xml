@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.OrderShipmentMapper">
+
+    <!-- 分页查询订单配送列表 -->
+    <select id="selectShipmentPage" resultType="com.naicha.hou.dto.OrderShipmentDTO">
+        SELECT 
+            o.id as orderId,
+            o.order_no as orderNo,
+            o.status as status,
+            u.nickname as customerName,
+            u.phone as phone,
+            u.address as address,
+            u.address as addressDetail,
+            os.delivery_type as deliveryType,
+            os.delivery_person as deliveryPerson,
+            os.delivery_phone as deliveryPhone,
+            os.delivery_company as deliveryCompany,
+            os.third_party_order_no as thirdPartyOrderNo,
+            COALESCE(os.shipping_status, 'pending') as shippingStatus,
+            os.shipping_time as shippingTime,
+            os.estimated_time as estimatedTime,
+            os.actual_delivery_time as actualDeliveryTime,
+            os.remark as remark
+        FROM `order` o
+        LEFT JOIN `user` u ON o.user_id = u.id
+        LEFT JOIN order_shipment os ON o.id = os.order_id AND os.deleted = 0
+        WHERE o.deleted = 0
+        <if test="query.merchantId != null">
+            AND o.merchant_id = #{query.merchantId}
+        </if>
+        <if test="query.orderNo != null and query.orderNo != ''">
+            AND o.order_no LIKE CONCAT('%', #{query.orderNo}, '%')
+        </if>
+        <if test="query.shippingStatus != null and query.shippingStatus != ''">
+            AND os.shipping_status = #{query.shippingStatus}
+        </if>
+        <if test="query.deliveryType != null and query.deliveryType != ''">
+            AND os.delivery_type = #{query.deliveryType}
+        </if>
+        <if test="query.startTime != null">
+            AND os.shipping_time >= #{query.startTime}
+        </if>
+        <if test="query.endTime != null">
+            AND os.shipping_time &lt;= #{query.endTime}
+        </if>
+        ORDER BY o.created_at DESC
+    </select>
+
+    <!-- 根据订单ID查询配送信息 -->
+    <select id="selectShipmentByOrderId" resultType="com.naicha.hou.dto.OrderShipmentDTO">
+        SELECT 
+            o.id as orderId,
+            o.order_no as orderNo,
+            u.nickname as customerName,
+            u.phone as phone,
+            u.address as address,
+            u.address as addressDetail,
+            os.delivery_type as deliveryType,
+            os.delivery_person as deliveryPerson,
+            os.delivery_phone as deliveryPhone,
+            os.delivery_company as deliveryCompany,
+            os.third_party_order_no as thirdPartyOrderNo,
+            os.shipping_status as shippingStatus,
+            os.shipping_time as shippingTime,
+            os.estimated_time as estimatedTime,
+            os.actual_delivery_time as actualDeliveryTime,
+            os.remark as remark
+        FROM `order` o
+        LEFT JOIN `user` u ON o.user_id = u.id
+        LEFT JOIN order_shipment os ON o.id = os.order_id AND os.deleted = 0
+        WHERE o.id = #{orderId} AND o.deleted = 0
+        ORDER BY os.created_at DESC
+        LIMIT 1
+    </select>
+
+    <!-- 根据订单号查询配送信息 -->
+    <select id="selectShipmentByOrderNo" resultType="com.naicha.hou.dto.OrderShipmentDTO">
+        SELECT 
+            o.id as orderId,
+            o.order_no as orderNo,
+            u.nickname as customerName,
+            u.phone as phone,
+            u.address as address,
+            u.address as addressDetail,
+            os.delivery_type as deliveryType,
+            os.delivery_person as deliveryPerson,
+            os.delivery_phone as deliveryPhone,
+            os.delivery_company as deliveryCompany,
+            os.third_party_order_no as thirdPartyOrderNo,
+            os.shipping_status as shippingStatus,
+            os.shipping_time as shippingTime,
+            os.estimated_time as estimatedTime,
+            os.actual_delivery_time as actualDeliveryTime,
+            os.remark as remark
+        FROM `order` o
+        LEFT JOIN `user` u ON o.user_id = u.id
+        LEFT JOIN order_shipment os ON o.id = os.order_id AND os.deleted = 0
+        WHERE o.order_no = #{orderNo} AND o.deleted = 0
+        ORDER BY os.created_at DESC
+        LIMIT 1
+    </select>
+
+</mapper>

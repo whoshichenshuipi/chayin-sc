@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.MerchantSettingMapper">
+
+    <!-- 根据商家ID查询设置 -->
+    <select id="selectByMerchantId" resultType="com.naicha.hou.entity.MerchantSetting">
+        SELECT * FROM merchant_setting 
+        WHERE merchant_id = #{merchantId} AND deleted = 0
+    </select>
+
+    <!-- 根据商家ID更新设置 -->
+    <update id="updateByMerchantId">
+        UPDATE merchant_setting 
+        <set>
+            <if test="setting.weekdayOpenTime != null">weekday_open_time = #{setting.weekdayOpenTime},</if>
+            <if test="setting.weekdayCloseTime != null">weekday_close_time = #{setting.weekdayCloseTime},</if>
+            <if test="setting.weekendOpenTime != null">weekend_open_time = #{setting.weekendOpenTime},</if>
+            <if test="setting.weekendCloseTime != null">weekend_close_time = #{setting.weekendCloseTime},</if>
+            <if test="setting.is24Hours != null">is_24_hours = #{setting.is24Hours},</if>
+            updated_at = NOW()
+        </set>
+        WHERE merchant_id = #{setting.merchantId} AND deleted = 0
+    </update>
+
+</mapper>
+

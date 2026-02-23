@@ -1,0 +1,43 @@
+# Logs
+node_modules/
+dist/
+dist-ssr/
+*.local
+logs/
+*.log
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Project Specific
+naicha-hou/target/
+naicha-hou/.mvn/
+naicha-hou/mvnw
+naicha-hou/mvnw.cmd
+.cursor/
+.vite/
+requirements_crawler.txt
+download_images.bat
+download_naicha_images.py
+download_naicha_images_selenium.py
+*.sql
+*.lst
+
+# Credentials & Sensitive Info
+# The application.yml files contain passwords and access keys.
+# We keep the structure but sensitive values should ideally be environment variables.
+# For now, we ignore the actual property files if they contain real secrets.
+# naicha-hou/src/main/resources/application.yml
+# naicha-hou/src/main/resources/application-dev.yml
+# naicha-hou/src/main/resources/application-prod.yml

@@ -1,0 +1,77 @@
+/**
+ * 响应式适配样式
+ * 适配移动端 + 门店终端
+ */
+
+/* ========== 移动端适配 (≤768px) ========== */
+@media (max-width: 768px) {
+  /* 容器内边距调整 */
+  .container {
+    padding: 0 var(--spacing-md);
+  }
+  
+  /* 标题字体缩小 */
+  h1 { font-size: var(--font-size-3xl); }
+  h2 { font-size: var(--font-size-2xl); }
+  h3 { font-size: var(--font-size-xl); }
+  h4 { font-size: var(--font-size-lg); }
+  
+  /* 卡片间距 */
+  .card {
+    padding: var(--spacing-md);
+  }
+  
+  /* 按钮尺寸 */
+  .btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* ========== 小屏移动端 (≤480px) ========== */
+@media (max-width: 480px) {
+  .container {
+    padding: 0 var(--spacing-sm);
+  }
+  
+  h1 { font-size: var(--font-size-2xl); }
+  h2 { font-size: var(--font-size-xl); }
+  h3 { font-size: var(--font-size-lg); }
+  
+  .card {
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-md);
+  }
+  
+  .btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+  }
+}
+
+/* ========== 门店终端适配 (≥1024px) ========== */
+@media (min-width: 1024px) {
+  .container {
+    max-width: 1400px;
+  }
+}
+
+/* ========== 大屏终端适配 (≥1440px) ========== */
+@media (min-width: 1440px) {
+  .container {
+    max-width: 1600px;
+  }
+}
+
+/* ========== 横屏适配 ========== */
+@media (orientation: landscape) and (max-height: 600px) {
+  .header {
+    height: auto;
+    min-height: 50px;
+  }
+  
+  .header-content {
+    height: auto;
+    padding: var(--spacing-sm) 0;
+  }
+}

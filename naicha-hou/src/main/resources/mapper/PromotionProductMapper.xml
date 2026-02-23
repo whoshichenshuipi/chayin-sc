@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.PromotionProductMapper">
+
+    <!-- 根据促销活动ID查询商品ID列表 -->
+    <select id="selectProductIdsByPromotionId" resultType="java.lang.Long">
+        SELECT product_id
+        FROM promotion_product
+        WHERE promotion_id = #{promotionId}
+        AND gift_product_id IS NULL
+    </select>
+
+    <!-- 根据促销活动ID查询赠送商品ID列表 -->
+    <select id="selectGiftProductIdsByPromotionId" resultType="java.lang.Long">
+        SELECT DISTINCT gift_product_id
+        FROM promotion_product
+        WHERE promotion_id = #{promotionId}
+        AND gift_product_id IS NOT NULL
+    </select>
+
+    <!-- 批量插入促销活动商品关联 -->
+    <insert id="batchInsert">
+        INSERT INTO promotion_product (promotion_id, product_id, created_at)
+        VALUES
+        <foreach collection="productIds" item="productId" separator=",">
+            (#{promotionId}, #{productId}, NOW())
+        </foreach>
+    </insert>
+
+    <!-- 批量插入赠送商品关联 -->
+    <insert id="batchInsertGiftProducts">
+        INSERT INTO promotion_product (promotion_id, gift_product_id, created_at)
+        VALUES
+        <foreach collection="giftProductIds" item="giftProductId" separator=",">
+            (#{promotionId}, #{giftProductId}, NOW())
+        </foreach>
+    </insert>
+
+    <!-- 根据促销活动ID删除关联关系 -->
+    <delete id="deleteByPromotionId">
+        DELETE FROM promotion_product
+        WHERE promotion_id = #{promotionId}
+    </delete>
+
+</mapper>
+

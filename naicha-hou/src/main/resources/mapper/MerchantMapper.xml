@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.MerchantMapper">
+
+    <!-- 根据用户名查询商家 -->
+    <select id="selectByUsername" resultType="com.naicha.hou.entity.Merchant">
+        SELECT * FROM merchant 
+        WHERE username = #{username} AND deleted = 0
+    </select>
+
+    <!-- 根据店铺名称查询商家 -->
+    <select id="selectByShopName" resultType="com.naicha.hou.entity.Merchant">
+        SELECT * FROM merchant 
+        WHERE shop_name = #{shopName} AND deleted = 0
+    </select>
+
+    <!-- 检查用户名是否存在 -->
+    <select id="existsByUsername" resultType="boolean">
+        SELECT COUNT(1) > 0 FROM merchant 
+        WHERE username = #{username} AND deleted = 0
+    </select>
+
+    <!-- 检查店铺名称是否存在 -->
+    <select id="existsByShopName" resultType="boolean">
+        SELECT COUNT(1) > 0 FROM merchant 
+        WHERE shop_name = #{shopName} AND deleted = 0
+    </select>
+
+</mapper>

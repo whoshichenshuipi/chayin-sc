@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.AnalyticsMapper">
+
+    <!-- 获取总客户数 -->
+    <select id="selectTotalCustomers" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT o.user_id)
+        FROM `order` o
+        WHERE o.merchant_id = #{merchantId}
+        AND o.deleted = 0
+        AND o.status IN (1, 2, 3, 4, 5)  -- 已支付、已接单、制作中、已发货、已完成
+    </select>
+
+    <!-- 获取活跃客户数（最近30天内有订单） -->
+    <select id="selectActiveCustomers" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT o.user_id)
+        FROM `order` o
+        WHERE o.merchant_id = #{merchantId}
+        AND o.deleted = 0
+        AND o.status IN (1, 2, 3, 4, 5)
+        AND o.created_at >= #{startTime}
+    </select>
+
+    <!-- 获取新客户数（本月） -->
+    <select id="selectNewCustomers" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT o.user_id)
+        FROM `order` o
+        WHERE o.merchant_id = #{merchantId}
+        AND o.deleted = 0
+        AND o.status IN (1, 2, 3, 4, 5)
+        AND o.created_at >= #{startTime}
+        AND o.user_id NOT IN (
+            SELECT DISTINCT user_id
+            FROM `order`
+            WHERE merchant_id = #{merchantId}
+            AND deleted = 0
+            AND status IN (1, 2, 3, 4, 5)
+            AND created_at &lt; #{startTime}
+        )
+    </select>
+
+    <!-- 获取消费频次数据 -->
+    <select id="selectFrequencyData" resultType="java.util.HashMap">
+        SELECT 
+            category,
+            count
+        FROM (
+            SELECT 
+                CASE 
+                    WHEN weekly_count >= 2 THEN '每周2次以上'
+                    WHEN weekly_count >= 1 THEN '每周1-2次'
+                    WHEN weekly_count >= 0.25 THEN '每月1-3次'
+                    ELSE '偶尔消费'
+                END as category,
+                COUNT(*) as count,
+                MIN(weekly_count) as min_weekly_count
+            FROM (
+                SELECT 
+                    o.user_id,
+                    COUNT(DISTINCT DATE(o.created_at)) / 4.0 as weekly_count
+                FROM `order` o
+                WHERE o.merchant_id = #{merchantId}
+                AND o.deleted = 0
+                AND o.status IN (1, 2, 3, 4, 5)
+                AND o.created_at >= #{startTime}
+                GROUP BY o.user_id
+            ) AS freq_data
+            GROUP BY 
+                CASE 
+                    WHEN weekly_count >= 2 THEN '每周2次以上'
+                    WHEN weekly_count >= 1 THEN '每周1-2次'
+                    WHEN weekly_count >= 0.25 THEN '每月1-3次'
+                    ELSE '偶尔消费'
+                END
+        ) AS result
+        ORDER BY 
+            CASE 
+                WHEN category = '每周2次以上' THEN 1
+                WHEN category = '每周1-2次' THEN 2
+                WHEN category = '每月1-3次' THEN 3
+                ELSE 4
+            END
+    </select>
+
+    <!-- 获取消费偏好数据（基于商品分类） -->
+    <select id="selectPreferenceData" resultType="com.naicha.hou.dto.ConsumptionPreferenceDTO">
+        SELECT 
+            COALESCE(pc.name, '其他') as name,
+            COUNT(DISTINCT oi.order_id) * 100.0 / (
+                SELECT COUNT(DISTINCT o.id)
+                FROM `order` o
+                WHERE o.merchant_id = #{merchantId}
+                AND o.deleted = 0
+                AND o.status IN (1, 2, 3, 4, 5)
+                AND o.created_at >= #{startTime}
+            ) as percentage
+        FROM order_item oi
+        INNER JOIN `order` o ON oi.order_id = o.id
+        LEFT JOIN product p ON oi.product_id = p.id
+        LEFT JOIN product_category pc ON p.category_id = pc.id
+        WHERE o.merchant_id = #{merchantId}
+        AND o.deleted = 0
+        AND o.status IN (1, 2, 3, 4, 5)
+        AND o.created_at >= #{startTime}
+        GROUP BY pc.id, pc.name
+        ORDER BY percentage DESC
+        LIMIT 10
+    </select>
+
+    <!-- 获取地域分布数据 -->
+    <select id="selectRegionDistribution" resultType="com.naicha.hou.dto.RegionDistributionDTO">
+        SELECT 
+            CASE 
+                WHEN u.address LIKE '%小区%' THEN CONCAT(SUBSTRING_INDEX(SUBSTRING_INDEX(u.address, '小区', 1), ',', -1), '小区')
+                WHEN u.address LIKE '%商业街%' THEN CONCAT(SUBSTRING_INDEX(SUBSTRING_INDEX(u.address, '商业街', 1), ',', -1), '商业街')
+                WHEN u.address LIKE '%办公楼%' THEN CONCAT(SUBSTRING_INDEX(SUBSTRING_INDEX(u.address, '办公楼', 1), ',', -1), '办公楼')
+                WHEN u.address LIKE '%学校%' THEN CONCAT(SUBSTRING_INDEX(SUBSTRING_INDEX(u.address, '学校', 1), ',', -1), '学校')
+                WHEN u.address LIKE '%社区%' THEN CONCAT(SUBSTRING_INDEX(SUBSTRING_INDEX(u.address, '社区', 1), ',', -1), '社区')
+                ELSE SUBSTRING_INDEX(u.address, ',', 1)
+            END as name,
+            CONCAT('距离店铺', FLOOR(RAND() * 2000 + 500), '米') as description,
+            COUNT(DISTINCT o.user_id) as count
+        FROM `order` o
+        INNER JOIN user u ON o.user_id = u.id
+        WHERE o.merchant_id = #{merchantId}
+        AND o.deleted = 0
+        AND o.status IN (1, 2, 3, 4, 5)
+        AND u.address IS NOT NULL
+        AND u.address != ''
+        GROUP BY name, description
+        ORDER BY count DESC
+        LIMIT 10
+    </select>
+
+    <!-- 分页查询客户详情列表 -->
+    <select id="selectCustomerDetailPage" resultType="com.naicha.hou.dto.CustomerDetailDTO">
+        SELECT 
+            u.id as customerId,
+            COALESCE(u.nickname, CONCAT(LEFT(u.phone, 3), '****', RIGHT(u.phone, 4))) as customerName,
+            CONCAT(LEFT(u.phone, 3), '****', RIGHT(u.phone, 4)) as phone,
+            ROUND(COUNT(DISTINCT DATE(o.created_at)) / GREATEST(DATEDIFF(MAX(o.created_at), MIN(o.created_at)), 1) * 7, 2) as frequency,
+            COALESCE(
+                (SELECT pc.name
+                 FROM order_item oi2
+                 INNER JOIN `order` o2 ON oi2.order_id = o2.id
+                 LEFT JOIN product p2 ON oi2.product_id = p2.id
+                 LEFT JOIN product_category pc ON p2.category_id = pc.id
+                 WHERE o2.user_id = u.id
+                 AND o2.merchant_id = #{merchantId}
+                 AND o2.deleted = 0
+                 AND o2.status IN (1, 2, 3, 4, 5)
+                 GROUP BY pc.id, pc.name
+                 ORDER BY COUNT(*) DESC
+                 LIMIT 1),
+                '未分类'
+            ) as preference,
+            COALESCE(
+                CASE 
+                    WHEN u.address LIKE '%小区%' THEN CONCAT(SUBSTRING_INDEX(SUBSTRING_INDEX(u.address, '小区', 1), ',', -1), '小区')
+                    WHEN u.address LIKE '%商业街%' THEN CONCAT(SUBSTRING_INDEX(SUBSTRING_INDEX(u.address, '商业街', 1), ',', -1), '商业街')
+                    WHEN u.address LIKE '%办公楼%' THEN CONCAT(SUBSTRING_INDEX(SUBSTRING_INDEX(u.address, '办公楼', 1), ',', -1), '办公楼')
+                    WHEN u.address LIKE '%学校%' THEN CONCAT(SUBSTRING_INDEX(SUBSTRING_INDEX(u.address, '学校', 1), ',', -1), '学校')
+                    WHEN u.address LIKE '%社区%' THEN CONCAT(SUBSTRING_INDEX(SUBSTRING_INDEX(u.address, '社区', 1), ',', -1), '社区')
+                    ELSE SUBSTRING_INDEX(u.address, ',', 1)
+                END,
+                '未设置'
+            ) as region,
+            COALESCE(SUM(o.pay_amount), 0) as totalAmount,
+            MAX(o.created_at) as lastOrderTime
+        FROM user u
+        INNER JOIN `order` o ON u.id = o.user_id
+        WHERE o.merchant_id = #{merchantId}
+        AND o.deleted = 0
+        AND o.status IN (1, 2, 3, 4, 5)
+        GROUP BY u.id, u.nickname, u.phone, u.address
+        ORDER BY totalAmount DESC, lastOrderTime DESC
+    </select>
+
+    <!-- ========== 销售统计相关SQL ========== -->
+
+    <!-- 获取今日订单量 -->
+    <select id="selectTodayOrderCount" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM `order` o
+        WHERE o.merchant_id = #{merchantId}
+        AND o.deleted = 0
+        AND o.status IN (1, 2, 3, 4, 5)
+        AND DATE(o.created_at) = DATE(#{startTime})
+    </select>
+
+    <!-- 获取今日销售额 -->
+    <select id="selectTodaySalesAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(o.pay_amount), 0)
+        FROM `order` o
+        WHERE o.merchant_id = #{merchantId}
+        AND o.deleted = 0
+        AND o.status IN (1, 2, 3, 4, 5)
+        AND DATE(o.created_at) = DATE(#{startTime})
+    </select>
+
+    <!-- 获取本月订单量 -->
+    <select id="selectMonthOrderCount" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM `order` o
+        WHERE o.merchant_id = #{merchantId}
+        AND o.deleted = 0
+        AND o.status IN (1, 2, 3, 4, 5)
+        AND o.created_at >= #{startTime}
+    </select>
+
+    <!-- 获取本月销售额 -->
+    <select id="selectMonthSalesAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(o.pay_amount), 0)
+        FROM `order` o
+        WHERE o.merchant_id = #{merchantId}
+        AND o.deleted = 0
+        AND o.status IN (1, 2, 3, 4, 5)
+        AND o.created_at >= #{startTime}
+    </select>
+
+    <!-- 获取店铺评分（平均评分） -->
+    <select id="selectShopRating" resultType="java.math.BigDecimal">
+        SELECT COALESCE(AVG(sr.overall_rating), 0)
+        FROM shop_review sr
+        WHERE sr.shop_id = #{merchantId}
+        AND sr.deleted = 0
+    </select>
+
+    <!-- 获取复购率 -->
+    <select id="selectRepurchaseRate" resultType="java.math.BigDecimal">
+        SELECT 
+            CASE 
+                WHEN total_customers > 0 THEN 
+                    (repurchase_customers * 100.0 / total_customers)
+                ELSE 0
+            END as repurchase_rate
+        FROM (
+            SELECT 
+                COUNT(DISTINCT CASE WHEN order_count >= 2 THEN user_id END) as repurchase_customers,
+                COUNT(DISTINCT user_id) as total_customers
+            FROM (
+                SELECT 
+                    o.user_id,
+                    COUNT(*) as order_count
+                FROM `order` o
+                WHERE o.merchant_id = #{merchantId}
+                AND o.deleted = 0
+                AND o.status IN (1, 2, 3, 4, 5)
+                AND o.created_at >= #{startTime}
+                GROUP BY o.user_id
+            ) as customer_orders
+        ) as rates
+    </select>
+
+    <!-- 获取订单量趋势数据 -->
+    <select id="selectOrderTrendData" resultType="java.util.HashMap">
+        SELECT 
+            DATE_FORMAT(o.created_at, '%m/%d') as date_label,
+            DATE_FORMAT(o.created_at, '%Y-%m-%d') as date_value,
+            COUNT(*) as order_count
+        FROM `order` o
+        WHERE o.merchant_id = #{merchantId}
+        AND o.deleted = 0
+        AND o.status IN (1, 2, 3, 4, 5)
+        AND o.created_at >= #{startTime}
+        GROUP BY DATE(o.created_at), DATE_FORMAT(o.created_at, '%m/%d'), DATE_FORMAT(o.created_at, '%Y-%m-%d')
+        ORDER BY date_value ASC
+    </select>
+
+    <!-- 获取销售额趋势数据 -->
+    <select id="selectSalesTrendData" resultType="java.util.HashMap">
+        SELECT 
+            DATE_FORMAT(o.created_at, '%m/%d') as date_label,
+            DATE_FORMAT(o.created_at, '%Y-%m-%d') as date_value,
+            COALESCE(SUM(o.pay_amount), 0) as sales_amount
+        FROM `order` o
+        WHERE o.merchant_id = #{merchantId}
+        AND o.deleted = 0
+        AND o.status IN (1, 2, 3, 4, 5)
+        AND o.created_at >= #{startTime}
+        GROUP BY DATE(o.created_at), DATE_FORMAT(o.created_at, '%m/%d'), DATE_FORMAT(o.created_at, '%Y-%m-%d')
+        ORDER BY date_value ASC
+    </select>
+
+    <!-- 获取商品销量排行 -->
+    <select id="selectProductRanking" resultType="com.naicha.hou.dto.ProductRankingDTO">
+        SELECT 
+            p.id as productId,
+            p.name as productName,
+            COALESCE(SUM(oi.quantity), 0) as salesCount,
+            COALESCE(SUM(oi.total_amount), 0) as salesAmount,
+            COALESCE(
+                (SELECT 
+                    CASE 
+                        WHEN COUNT(*) > 0 THEN 
+                            (SUM(CASE WHEN oi2.total_amount > 0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*))
+                        ELSE 0
+                    END
+                 FROM order_item oi2
+                 INNER JOIN `order` o2 ON oi2.order_id = o2.id
+                 WHERE oi2.product_id = p.id
+                 AND o2.merchant_id = #{merchantId}
+                 AND o2.deleted = 0
+                 AND o2.status IN (1, 2, 3, 4, 5)
+                 AND o2.created_at >= #{startTime}),
+                0
+            ) as goodRate
+        FROM product p
+        LEFT JOIN order_item oi ON p.id = oi.product_id
+        LEFT JOIN `order` o ON oi.order_id = o.id
+        WHERE p.merchant_id = #{merchantId}
+        AND p.deleted = 0
+        AND (o.id IS NULL OR (o.deleted = 0 AND o.status IN (1, 2, 3, 4, 5)))
+        AND (o.id IS NULL OR o.created_at >= #{startTime})
+        GROUP BY p.id, p.name
+        HAVING salesCount > 0
+        ORDER BY salesCount DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取热门商品（增长率较高的商品） -->
+    <select id="selectHotProducts" resultType="com.naicha.hou.dto.HotProductDTO">
+        SELECT 
+            p.id as productId,
+            p.name as productName,
+            COALESCE(current_sales.sales_count, 0) as salesCount,
+            COALESCE(current_sales.sales_amount, 0) as salesAmount,
+            CASE 
+                WHEN COALESCE(previous_sales.sales_count, 0) > 0 THEN
+                    ((COALESCE(current_sales.sales_count, 0) - COALESCE(previous_sales.sales_count, 0)) * 100.0 / previous_sales.sales_count)
+                WHEN COALESCE(current_sales.sales_count, 0) > 0 THEN 100.0
+                ELSE 0
+            END as growthRate
+        FROM product p
+        LEFT JOIN (
+            SELECT 
+                oi.product_id,
+                SUM(oi.quantity) as sales_count,
+                SUM(oi.total_amount) as sales_amount
+            FROM order_item oi
+            INNER JOIN `order` o ON oi.order_id = o.id
+            WHERE o.merchant_id = #{merchantId}
+            AND o.deleted = 0
+            AND o.status IN (1, 2, 3, 4, 5)
+            AND o.created_at >= #{currentStartTime}
+            GROUP BY oi.product_id
+        ) current_sales ON p.id = current_sales.product_id
+        LEFT JOIN (
+            SELECT 
+                oi.product_id,
+                SUM(oi.quantity) as sales_count
+            FROM order_item oi
+            INNER JOIN `order` o ON oi.order_id = o.id
+            WHERE o.merchant_id = #{merchantId}
+            AND o.deleted = 0
+            AND o.status IN (1, 2, 3, 4, 5)
+            AND o.created_at >= #{previousStartTime}
+            AND o.created_at &lt; #{currentStartTime}
+            GROUP BY oi.product_id
+        ) previous_sales ON p.id = previous_sales.product_id
+        WHERE p.merchant_id = #{merchantId}
+        AND p.deleted = 0
+        AND COALESCE(current_sales.sales_count, 0) > 0
+        ORDER BY growthRate DESC, salesCount DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取滞销商品（销量低且库存高的商品） -->
+    <select id="selectSlowProducts" resultType="com.naicha.hou.dto.SlowProductDTO">
+        SELECT 
+            p.id as productId,
+            p.name as productName,
+            COALESCE(sales.sales_count, 0) as salesCount,
+            COALESCE(sales.sales_amount, 0) as salesAmount,
+            COALESCE(p.stock, 0) as stock,
+            COALESCE(p.stock_alert, 10) as stockAlert
+        FROM product p
+        LEFT JOIN (
+            SELECT 
+                oi.product_id,
+                SUM(oi.quantity) as sales_count,
+                SUM(oi.total_amount) as sales_amount
+            FROM order_item oi
+            INNER JOIN `order` o ON oi.order_id = o.id
+            WHERE o.merchant_id = #{merchantId}
+            AND o.deleted = 0
+            AND o.status IN (1, 2, 3, 4, 5)
+            AND o.created_at >= #{startTime}
+            GROUP BY oi.product_id
+        ) sales ON p.id = sales.product_id
+        WHERE p.merchant_id = #{merchantId}
+        AND p.deleted = 0
+        AND p.status = 1
+        AND (COALESCE(sales.sales_count, 0) &lt; 50 OR (COALESCE(p.stock, 0) > 100 AND COALESCE(sales.sales_count, 0) &lt; 20))
+        ORDER BY salesCount ASC, stock DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>
+

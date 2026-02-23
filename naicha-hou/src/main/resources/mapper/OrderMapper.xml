@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.OrderMapper">
+
+    <!-- 订单结果映射 -->
+    <resultMap id="OrderDTOMap" type="com.naicha.hou.dto.OrderDTO">
+        <id column="id" property="id"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="user_id" property="userId"/>
+        <result column="user_name" property="userName"/>
+        <result column="user_phone" property="userPhone"/>
+        <result column="merchant_id" property="merchantId"/>
+        <result column="merchant_name" property="merchantName"/>
+        <result column="total_amount" property="totalAmount"/>
+        <result column="discount_amount" property="discountAmount"/>
+        <result column="pay_amount" property="payAmount"/>
+        <result column="status" property="status"/>
+        <result column="pay_method" property="payMethod"/>
+        <result column="pay_time" property="payTime"/>
+        <result column="delivery_time" property="deliveryTime"/>
+        <result column="remark" property="remark"/>
+        <result column="delivery_address" property="deliveryAddress"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <!-- 分页查询订单列表 -->
+    <select id="selectOrderPage" resultMap="OrderDTOMap">
+        SELECT 
+            o.id,
+            o.order_no,
+            o.user_id,
+            u.nickname as user_name,
+            u.phone as user_phone,
+            o.merchant_id,
+            m.shop_name as merchant_name,
+            o.total_amount,
+            o.discount_amount,
+            o.pay_amount,
+            o.status,
+            o.pay_method,
+            o.pay_time,
+            o.delivery_time,
+            o.remark,
+            o.created_at,
+            o.updated_at
+        FROM `order` o
+        LEFT JOIN user u ON o.user_id = u.id
+        LEFT JOIN merchant m ON o.merchant_id = m.id
+        WHERE o.deleted = 0
+        <if test="query.merchantId != null">
+            AND o.merchant_id = #{query.merchantId}
+        </if>
+        <if test="query.userId != null">
+            AND o.user_id = #{query.userId}
+        </if>
+        <if test="query.orderNo != null and query.orderNo != ''">
+            AND o.order_no LIKE CONCAT('%', #{query.orderNo}, '%')
+        </if>
+        <if test="query.status != null">
+            AND o.status = #{query.status}
+        </if>
+        <if test="query.startTime != null and query.startTime != ''">
+            AND o.created_at >= #{query.startTime}
+        </if>
+        <if test="query.endTime != null and query.endTime != ''">
+            AND o.created_at &lt;= #{query.endTime}
+        </if>
+        ORDER BY o.created_at DESC
+    </select>
+
+    <!-- 根据订单ID查询订单详情 -->
+    <select id="selectOrderDetail" resultMap="OrderDTOMap">
+        SELECT 
+            o.id,
+            o.order_no,
+            o.user_id,
+            u.nickname as user_name,
+            u.phone as user_phone,
+            o.merchant_id,
+            m.shop_name as merchant_name,
+            o.total_amount,
+            o.discount_amount,
+            o.pay_amount,
+            o.status,
+            o.pay_method,
+            o.pay_time,
+            o.delivery_time,
+            o.remark,
+            o.created_at,
+            o.updated_at
+        FROM `order` o
+        LEFT JOIN user u ON o.user_id = u.id
+        LEFT JOIN merchant m ON o.merchant_id = m.id
+        WHERE o.id = #{orderId} AND o.deleted = 0
+    </select>
+
+    <!-- 根据订单号查询订单 -->
+    <select id="selectOrderByOrderNo" resultMap="OrderDTOMap">
+        SELECT 
+            o.id,
+            o.order_no,
+            o.user_id,
+            u.nickname as user_name,
+            u.phone as user_phone,
+            o.merchant_id,
+            m.shop_name as merchant_name,
+            o.total_amount,
+            o.discount_amount,
+            o.pay_amount,
+            o.status,
+            o.pay_method,
+            o.pay_time,
+            o.delivery_time,
+            o.remark,
+            o.created_at,
+            o.updated_at
+        FROM `order` o
+        LEFT JOIN user u ON o.user_id = u.id
+        LEFT JOIN merchant m ON o.merchant_id = m.id
+        WHERE o.order_no = #{orderNo} AND o.deleted = 0
+    </select>
+
+    <!-- 查询用户订单统计信息 -->
+    <select id="selectUserOrderStats" resultType="java.util.HashMap">
+        SELECT 
+            COALESCE(SUM(CASE WHEN o.status IN (1, 2, 3, 4, 5) THEN o.pay_amount ELSE 0 END), 0) as totalAmount,
+            COUNT(CASE WHEN o.status IN (1, 2, 3, 4, 5) THEN 1 END) as orderCount,
+            (SELECT MAX(updated_at) FROM user WHERE id = #{userId} AND deleted = 0) as lastLoginTime
+        FROM `order` o
+        WHERE o.user_id = #{userId}
+        AND o.deleted = 0
+    </select>
+
+</mapper>

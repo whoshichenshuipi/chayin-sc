@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.ProductSpecMapper">
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, product_id, spec_type, spec_name, spec_value, extra_price,
+        stock, sort, status, created_at, updated_at, deleted
+    </sql>
+
+    <!-- 根据商品ID查询规格列表 -->
+    <select id="selectByProductId" resultType="com.naicha.hou.entity.ProductSpec">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM product_spec
+        WHERE product_id = #{productId}
+        AND deleted = 0
+        ORDER BY spec_type, sort
+    </select>
+
+    <!-- 根据规格类型查询规格列表 -->
+    <select id="selectBySpecType" resultType="com.naicha.hou.entity.ProductSpec">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM product_spec
+        WHERE product_id = #{productId}
+        AND spec_type = #{specType}
+        AND deleted = 0
+        ORDER BY sort
+    </select>
+
+</mapper>
+

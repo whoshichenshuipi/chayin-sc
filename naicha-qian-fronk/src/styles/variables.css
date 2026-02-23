@@ -1,0 +1,118 @@
+/**
+ * 奶茶零售系统 - 全局设计变量
+ * 主视觉：红绿色系（红色#E63946传递活力食欲，绿色#2A9D8F体现健康新鲜）
+ */
+
+:root {
+  /* ========== 色彩体系 ========== */
+  /* 主色：暖调红色（传递活力食欲） */
+  --color-primary: #E63946;
+  --color-primary-light: #FF6B7A;
+  --color-primary-dark: #C91827;
+  --color-primary-lighter: #FFE5E8;
+  
+  /* 辅助色：鲜萃绿色（凸显食材新鲜） */
+  --color-secondary: #2A9D8F;
+  --color-secondary-light: #4FB3A6;
+  --color-secondary-dark: #1E7167;
+  --color-secondary-lighter: #E0F7F4;
+  
+  /* 中性色 */
+  --color-bg-white: #F8F9FA;
+  --color-bg-gray-light: #E9ECEF;
+  --color-gray-dark: #343A40;
+  --color-gray-medium: #6C757D;
+  --color-gray-light: #ADB5BD;
+  
+  /* 功能色 */
+  --color-success: #2A9D8F;
+  --color-warning: #FFC107;
+  --color-danger: #DC3545;
+  --color-info: #17A2B8;
+  
+  /* 文本色 */
+  --color-text-primary: #343A40;
+  --color-text-secondary: #6C757D;
+  --color-text-tertiary: #ADB5BD;
+  --color-text-inverse: #FFFFFF;
+  
+  /* ========== 圆角系统 ========== */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+  
+  /* ========== 阴影系统 ========== */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 8px 16px rgba(0, 0, 0, 0.1);
+  --shadow-card: 0 2px 8px rgba(230, 57, 70, 0.08);
+  --shadow-elevated: 0 4px 12px rgba(230, 57, 70, 0.12);
+  
+  /* ========== 间距系统 ========== */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  
+  /* ========== 字体系统 ========== */
+  --font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', 'Helvetica Neue', Arial, sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 30px;
+  --font-size-4xl: 36px;
+  
+  /* 字重 */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* 行高 */
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.8;
+  
+  /* ========== 过渡动画 ========== */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  
+  /* ========== 布局 ========== */
+  --container-max-width: 1200px;
+  --container-padding: 16px;
+  
+  /* ========== Z-index层级 ========== */
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-popover: 1060;
+  --z-index-tooltip: 1070;
+}
+
+/* ========== 响应式断点 ========== */
+@media (max-width: 768px) {
+  :root {
+    --container-padding: 12px;
+    --font-size-base: 14px;
+    --spacing-md: 12px;
+    --spacing-lg: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --container-padding: 8px;
+    --font-size-base: 13px;
+  }
+}

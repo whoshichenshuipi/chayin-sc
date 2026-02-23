@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.CouponUserMapper">
+
+    <!-- 查询优惠券使用明细 -->
+    <select id="selectUsageDetails" resultType="com.naicha.hou.dto.CouponUsageDetailDTO">
+        SELECT
+            u.nickname AS userName,
+            cu.user_id AS userId,
+            cu.received_time AS receivedTime,
+            cu.used_time AS usedTime,
+            o.order_no AS orderNo,
+            cu.order_id AS orderId,
+            cu.status AS status
+        FROM coupon_user cu
+        LEFT JOIN user u ON cu.user_id = u.id
+        LEFT JOIN `order` o ON cu.order_id = o.id
+        WHERE cu.coupon_id = #{couponId}
+        ORDER BY cu.received_time DESC
+    </select>
+
+    <!-- 分页查询用户优惠券列表 -->
+    <select id="selectUserCouponPage" resultType="com.naicha.hou.dto.UserCouponDTO">
+        SELECT
+            cu.id,
+            cu.coupon_id AS couponId,
+            cu.user_id AS userId,
+            c.name,
+            c.type,
+            c.threshold,
+            c.discount,
+            c.product_scope AS productScope,
+            c.description,
+            c.valid_start_time AS validStartTime,
+            c.valid_end_time AS validEndTime,
+            cu.received_time AS receivedTime,
+            cu.used_time AS usedTime,
+            cu.order_id AS orderId,
+            o.order_no AS orderNo,
+            cu.status,
+            c.merchant_id AS merchantId,
+            m.shop_name AS merchantName
+        FROM coupon_user cu
+        INNER JOIN coupon c ON cu.coupon_id = c.id
+        LEFT JOIN merchant m ON c.merchant_id = m.id
+        LEFT JOIN `order` o ON cu.order_id = o.id
+        WHERE 1=1
+        <if test="query.userId != null">
+            AND cu.user_id = #{query.userId}
+        </if>
+        <if test="query.status != null and query.status != ''">
+            AND cu.status = #{query.status}
+        </if>
+        ORDER BY cu.received_time DESC, cu.id DESC
+    </select>
+
+</mapper>
+

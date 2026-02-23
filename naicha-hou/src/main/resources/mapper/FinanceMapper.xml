@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.FinanceMapper">
+
+    <!-- 收入记录结果映射 -->
+    <resultMap id="FinanceIncomeRecordMap" type="com.naicha.hou.dto.FinanceIncomeRecordDTO">
+        <result column="order_id" property="orderId"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="order_time" property="orderTime"/>
+        <result column="product_name" property="productName"/>
+        <result column="original_amount" property="originalAmount"/>
+        <result column="platform_fee" property="platformFee"/>
+        <result column="income_amount" property="incomeAmount"/>
+        <result column="settlement_status" property="settlementStatus"/>
+        <result column="settlement_time" property="settlementTime"/>
+    </resultMap>
+
+    <!-- 支出记录结果映射 -->
+    <resultMap id="FinanceExpenseRecordMap" type="com.naicha.hou.dto.FinanceExpenseRecordDTO">
+        <result column="expense_time" property="expenseTime"/>
+        <result column="expense_type" property="expenseType"/>
+        <result column="amount" property="amount"/>
+        <result column="description" property="description"/>
+        <result column="related_order_id" property="relatedOrderId"/>
+    </resultMap>
+
+    <!-- 分页查询收入记录 -->
+    <select id="selectIncomeRecords" resultMap="FinanceIncomeRecordMap">
+        SELECT 
+            o.id as order_id,
+            o.order_no,
+            o.created_at as order_time,
+            GROUP_CONCAT(DISTINCT oi.product_name SEPARATOR ' + ') as product_name,
+            o.total_amount as original_amount,
+            ROUND(o.total_amount * 0.10, 2) as platform_fee,
+            ROUND(o.total_amount * 0.90, 2) as income_amount,
+            CASE 
+                WHEN o.status = 5 THEN 'settled'
+                ELSE 'pending'
+            END as settlement_status,
+            CASE 
+                WHEN o.status = 5 THEN o.updated_at
+                ELSE NULL
+            END as settlement_time
+        FROM `order` o
+        LEFT JOIN order_item oi ON o.id = oi.order_id
+        WHERE o.merchant_id = #{merchantId}
+          AND o.deleted = 0
+          AND o.status IN (1, 2, 3, 4, 5)
+          <if test="startTime != null">
+              AND o.created_at >= #{startTime}
+          </if>
+          <if test="endTime != null">
+              AND o.created_at &lt;= #{endTime}
+          </if>
+        GROUP BY o.id, o.order_no, o.created_at, o.total_amount, o.status, o.updated_at
+        ORDER BY o.created_at DESC
+    </select>
+
+    <!-- 分页查询支出记录 -->
+    <select id="selectExpenseRecords" resultMap="FinanceExpenseRecordMap">
+        SELECT 
+            o.created_at as expense_time,
+            'platform_fee' as expense_type,
+            ROUND(o.total_amount * 0.10, 2) as amount,
+            CONCAT('订单 ', o.order_no COLLATE utf8mb4_unicode_ci, ' 平台手续费') COLLATE utf8mb4_unicode_ci as description,
+            o.order_no COLLATE utf8mb4_unicode_ci as related_order_id
+        FROM `order` o
+        WHERE o.merchant_id = #{merchantId}
+          AND o.deleted = 0
+          AND o.status IN (1, 2, 3, 4, 5)
+          <if test="startTime != null">
+              AND o.created_at >= #{startTime}
+          </if>
+          <if test="endTime != null">
+              AND o.created_at &lt;= #{endTime}
+          </if>
+        
+        UNION ALL
+        
+        SELECT 
+            orf.complete_time as expense_time,
+            'refund' as expense_type,
+            orf.refund_amount as amount,
+            CONCAT('订单 ', orf.order_no COLLATE utf8mb4_unicode_ci, ' 退款') COLLATE utf8mb4_unicode_ci as description,
+            orf.order_no COLLATE utf8mb4_unicode_ci as related_order_id
+        FROM order_refund orf
+        WHERE orf.merchant_id = #{merchantId}
+          AND orf.is_deleted = 0
+          AND orf.status = 'completed'
+          <if test="startTime != null">
+              AND orf.complete_time >= #{startTime}
+          </if>
+          <if test="endTime != null">
+              AND orf.complete_time &lt;= #{endTime}
+          </if>
+        
+        ORDER BY expense_time DESC
+    </select>
+
+    <!-- 计算总收入 -->
+    <select id="calculateTotalIncome" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(ROUND(o.total_amount * 0.90, 2)), 0)
+        FROM `order` o
+        WHERE o.merchant_id = #{merchantId}
+          AND o.deleted = 0
+          AND o.status IN (1, 2, 3, 4, 5)
+          <if test="startTime != null">
+              AND o.created_at >= #{startTime}
+          </if>
+          <if test="endTime != null">
+              AND o.created_at &lt;= #{endTime}
+          </if>
+    </select>
+
+    <!-- 计算总支出 -->
+    <select id="calculateTotalExpense" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(amount), 0)
+        FROM (
+            SELECT ROUND(o.total_amount * 0.10, 2) as amount
+            FROM `order` o
+            WHERE o.merchant_id = #{merchantId}
+              AND o.deleted = 0
+              AND o.status IN (1, 2, 3, 4, 5)
+              <if test="startTime != null">
+                  AND o.created_at >= #{startTime}
+              </if>
+              <if test="endTime != null">
+                  AND o.created_at &lt;= #{endTime}
+              </if>
+            
+            UNION ALL
+            
+            SELECT COALESCE(orf.refund_amount, 0) as amount
+            FROM order_refund orf
+            WHERE orf.merchant_id = #{merchantId}
+              AND orf.is_deleted = 0
+              AND orf.status = 'completed'
+              <if test="startTime != null">
+                  AND orf.complete_time >= #{startTime}
+              </if>
+              <if test="endTime != null">
+                  AND orf.complete_time &lt;= #{endTime}
+              </if>
+        ) as expenses
+    </select>
+
+    <!-- 计算待结算金额 -->
+    <select id="calculatePendingAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(ROUND(o.total_amount * 0.90, 2)), 0)
+        FROM `order` o
+        WHERE o.merchant_id = #{merchantId}
+          AND o.deleted = 0
+          AND o.status IN (1, 2, 3, 4)
+          <if test="startTime != null">
+              AND o.created_at >= #{startTime}
+          </if>
+          <if test="endTime != null">
+              AND o.created_at &lt;= #{endTime}
+          </if>
+    </select>
+
+</mapper>
+

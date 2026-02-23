@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.ShopReviewMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.naicha.hou.entity.ShopReview">
+        <id column="id" property="id"/>
+        <result column="shop_id" property="shopId"/>
+        <result column="user_id" property="userId"/>
+        <result column="user_name" property="userName"/>
+        <result column="user_avatar" property="userAvatar"/>
+        <result column="overall_rating" property="overallRating"/>
+        <result column="quality_rating" property="qualityRating"/>
+        <result column="delivery_rating" property="deliveryRating"/>
+        <result column="service_rating" property="serviceRating"/>
+        <result column="comment" property="comment"/>
+        <result column="images" property="images"/>
+        <result column="merchant_reply" property="merchantReply"/>
+        <result column="reply_time" property="replyTime"/>
+        <result column="helpful_count" property="helpfulCount"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 根据店铺ID查询评价列表 -->
+    <select id="selectByShopId" resultMap="BaseResultMap">
+        SELECT *
+        FROM shop_review
+        WHERE shop_id = #{shopId}
+          AND deleted = 0
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 根据店铺ID统计评价数量 -->
+    <select id="countByShopId" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM shop_review
+        WHERE shop_id = #{shopId}
+          AND deleted = 0
+    </select>
+
+    <!-- 根据店铺ID查询平均评分 -->
+    <select id="selectAverageRating" resultType="java.lang.Double">
+        SELECT AVG(overall_rating)
+        FROM shop_review
+        WHERE shop_id = #{shopId}
+          AND deleted = 0
+    </select>
+
+</mapper>

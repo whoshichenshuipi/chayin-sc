@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.UserViolationMapper">
+
+    <!-- 根据用户ID查询违规记录列表 -->
+    <select id="selectByUserId" resultType="com.naicha.hou.entity.UserViolation">
+        SELECT 
+            id,
+            user_id,
+            type,
+            reason,
+            limit_days,
+            handler,
+            created_at,
+            deleted
+        FROM user_violation
+        WHERE user_id = #{userId}
+        AND deleted = 0
+        ORDER BY created_at DESC
+    </select>
+
+</mapper>
+

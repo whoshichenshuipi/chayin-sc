@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.PromotionUserCartMapper">
+
+    <!-- 根据用户ID和购物车项ID查询营销活动参与记录 -->
+    <select id="selectByUserIdAndCartItemId" resultType="com.naicha.hou.entity.PromotionUserCart">
+        SELECT *
+        FROM promotion_user_cart
+        WHERE user_id = #{userId}
+        AND cart_item_id = #{cartItemId}
+        AND status = 'active'
+    </select>
+
+    <!-- 根据用户ID和商品ID查询营销活动参与记录 -->
+    <select id="selectByUserIdAndProductId" resultType="com.naicha.hou.entity.PromotionUserCart">
+        SELECT *
+        FROM promotion_user_cart
+        WHERE user_id = #{userId}
+        AND product_id = #{productId}
+        AND status = 'active'
+    </select>
+
+    <!-- 根据用户ID查询所有有效的营销活动参与记录 -->
+    <select id="selectActiveByUserId" resultType="com.naicha.hou.entity.PromotionUserCart">
+        SELECT *
+        FROM promotion_user_cart
+        WHERE user_id = #{userId}
+        AND status = 'active'
+    </select>
+
+    <!-- 批量更新状态为已使用 -->
+    <update id="batchUpdateStatusToUsed">
+        UPDATE promotion_user_cart
+        SET status = 'used',
+            updated_at = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- 根据用户ID和购物车项ID列表查询营销活动参与记录 -->
+    <select id="selectByUserIdAndCartItemIds" resultType="com.naicha.hou.entity.PromotionUserCart">
+        SELECT *
+        FROM promotion_user_cart
+        WHERE user_id = #{userId}
+        AND cart_item_id IN
+        <foreach collection="cartItemIds" item="cartItemId" open="(" separator="," close=")">
+            #{cartItemId}
+        </foreach>
+        AND status = 'active'
+    </select>
+
+    <!-- 根据用户ID和活动ID查询营销活动参与记录（检查用户是否已参与活动） -->
+    <select id="selectByUserIdAndPromotionId" resultType="com.naicha.hou.entity.PromotionUserCart">
+        SELECT *
+        FROM promotion_user_cart
+        WHERE user_id = #{userId}
+        AND promotion_id = #{promotionId}
+        AND status = 'active'
+    </select>
+
+</mapper>
+

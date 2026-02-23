@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.CouponProductMapper">
+
+    <!-- 根据优惠券ID查询商品ID列表 -->
+    <select id="selectProductIdsByCouponId" resultType="java.lang.Long">
+        SELECT product_id
+        FROM coupon_product
+        WHERE coupon_id = #{couponId}
+    </select>
+
+    <!-- 批量插入优惠券商品关联 -->
+    <insert id="batchInsert">
+        INSERT INTO coupon_product (coupon_id, product_id, created_at)
+        VALUES
+        <foreach collection="productIds" item="productId" separator=",">
+            (#{couponId}, #{productId}, NOW())
+        </foreach>
+    </insert>
+
+    <!-- 根据优惠券ID删除关联关系 -->
+    <delete id="deleteByCouponId">
+        DELETE FROM coupon_product
+        WHERE coupon_id = #{couponId}
+    </delete>
+
+</mapper>
+

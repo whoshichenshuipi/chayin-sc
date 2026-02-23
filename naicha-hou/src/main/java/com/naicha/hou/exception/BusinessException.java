@@ -1,0 +1,68 @@
+package com.naicha.hou.exception;
+
+import com.naicha.hou.common.ResultCode;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+/**
+ * 业务异常类
+ *
+ * @author naicha
+ * @since 2023-12-01
+ */
+@Data
+@EqualsAndHashCode(callSuper = true)
+public class BusinessException extends RuntimeException {
+
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 错误码
+     */
+    private Integer code;
+
+    /**
+     * 错误消息
+     */
+    private String message;
+
+    public BusinessException() {
+        super();
+    }
+
+    public BusinessException(String message) {
+        super(message);
+        this.message = message;
+        this.code = ResultCode.BUSINESS_ERROR.getCode();
+    }
+
+    public BusinessException(Integer code, String message) {
+        super(message);
+        this.code = code;
+        this.message = message;
+    }
+
+    public BusinessException(ResultCode resultCode) {
+        super(resultCode.getMessage());
+        this.code = resultCode.getCode();
+        this.message = resultCode.getMessage();
+    }
+
+    public BusinessException(ResultCode resultCode, String message) {
+        super(message);
+        this.code = resultCode.getCode();
+        this.message = message;
+    }
+
+    public BusinessException(String message, Throwable cause) {
+        super(message, cause);
+        this.message = message;
+        this.code = ResultCode.BUSINESS_ERROR.getCode();
+    }
+
+    public BusinessException(Integer code, String message, Throwable cause) {
+        super(message, cause);
+        this.code = code;
+        this.message = message;
+    }
+}

@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.OrderRefundMapper">
+
+    <!-- 订单退款申请结果映射 -->
+    <resultMap id="OrderRefundDTOMap" type="com.naicha.hou.dto.OrderRefundDTO">
+        <id column="id" property="id"/>
+        <result column="order_id" property="orderId"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="merchant_id" property="merchantId"/>
+        <result column="user_id" property="userId"/>
+        <result column="customer_name" property="customerName"/>
+        <result column="phone" property="phone"/>
+        <result column="process_type" property="processType"/>
+        <result column="reason" property="reason"/>
+        <result column="detail_reason" property="detailReason"/>
+        <result column="total_amount" property="totalAmount"/>
+        <result column="refund_amount" property="refundAmount"/>
+        <result column="refund_type" property="refundType"/>
+        <result column="refund_reason" property="refundReason"/>
+        <result column="status" property="status"/>
+        <result column="process_remark" property="processRemark"/>
+        <result column="reject_reason" property="rejectReason"/>
+        <result column="reject_detail" property="rejectDetail"/>
+        <result column="apply_time" property="applyTime"/>
+        <result column="process_time" property="processTime"/>
+        <result column="complete_time" property="completeTime"/>
+        <result column="order_status" property="orderStatus"/>
+    </resultMap>
+
+    <!-- 分页查询订单退款申请列表 -->
+    <select id="selectRefundPage" resultMap="OrderRefundDTOMap">
+        SELECT 
+            r.id,
+            r.order_id,
+            r.order_no,
+            r.merchant_id,
+            r.user_id,
+            COALESCE(u.nickname, u.username) as customer_name,
+            u.phone,
+            r.process_type,
+            r.reason,
+            r.detail_reason,
+            r.total_amount,
+            r.refund_amount,
+            r.refund_type,
+            r.refund_reason,
+            r.status,
+            r.process_remark,
+            r.reject_reason,
+            r.reject_detail,
+            r.apply_time,
+            r.process_time,
+            r.complete_time,
+            o.status as order_status
+        FROM order_refund r
+        LEFT JOIN user u ON r.user_id = u.id AND u.deleted = 0
+        LEFT JOIN `order` o ON r.order_id = o.id AND o.deleted = 0
+        WHERE r.is_deleted = 0
+        <if test="query.merchantId != null">
+            AND r.merchant_id = #{query.merchantId}
+        </if>
+        <if test="query.orderNo != null and query.orderNo != ''">
+            AND r.order_no LIKE CONCAT('%', #{query.orderNo}, '%')
+        </if>
+        <if test="query.processType != null and query.processType != ''">
+            AND r.process_type = #{query.processType}
+        </if>
+        <if test="query.status != null and query.status != ''">
+            AND r.status = #{query.status}
+        </if>
+        <if test="query.startTime != null and query.startTime != ''">
+            AND r.apply_time >= #{query.startTime}
+        </if>
+        <if test="query.endTime != null and query.endTime != ''">
+            AND r.apply_time &lt;= #{query.endTime}
+        </if>
+        ORDER BY r.apply_time DESC
+    </select>
+
+    <!-- 根据ID查询订单退款申请详情 -->
+    <select id="selectRefundDetailById" resultMap="OrderRefundDTOMap">
+        SELECT 
+            r.id,
+            r.order_id,
+            r.order_no,
+            r.merchant_id,
+            r.user_id,
+            COALESCE(u.nickname, u.username) as customer_name,
+            u.phone,
+            r.process_type,
+            r.reason,
+            r.detail_reason,
+            r.total_amount,
+            r.refund_amount,
+            r.refund_type,
+            r.refund_reason,
+            r.status,
+            r.process_remark,
+            r.reject_reason,
+            r.reject_detail,
+            r.apply_time,
+            r.process_time,
+            r.complete_time,
+            o.status as order_status
+        FROM order_refund r
+        LEFT JOIN user u ON r.user_id = u.id AND u.deleted = 0
+        LEFT JOIN `order` o ON r.order_id = o.id AND o.deleted = 0
+        WHERE r.id = #{id} AND r.is_deleted = 0
+    </select>
+
+    <!-- 根据订单ID查询订单退款申请详情 -->
+    <select id="selectRefundDetailByOrderId" resultMap="OrderRefundDTOMap">
+        SELECT 
+            r.id,
+            r.order_id,
+            r.order_no,
+            r.merchant_id,
+            r.user_id,
+            COALESCE(u.nickname, u.username) as customer_name,
+            u.phone,
+            r.process_type,
+            r.reason,
+            r.detail_reason,
+            r.total_amount,
+            r.refund_amount,
+            r.refund_type,
+            r.refund_reason,
+            r.status,
+            r.process_remark,
+            r.reject_reason,
+            r.reject_detail,
+            r.apply_time,
+            r.process_time,
+            r.complete_time,
+            o.status as order_status
+        FROM order_refund r
+        LEFT JOIN user u ON r.user_id = u.id AND u.deleted = 0
+        LEFT JOIN `order` o ON r.order_id = o.id AND o.deleted = 0
+        WHERE r.order_id = #{orderId} AND r.is_deleted = 0
+        ORDER BY r.apply_time DESC
+        LIMIT 1
+    </select>
+
+    <!-- 统计待处理取消申请数量 -->
+    <select id="countPendingCancel" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM order_refund
+        WHERE merchant_id = #{merchantId} 
+        AND process_type = 'cancel' 
+        AND status = 'pending' 
+        AND is_deleted = 0
+    </select>
+
+    <!-- 统计待处理退款申请数量 -->
+    <select id="countPendingRefund" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM order_refund
+        WHERE merchant_id = #{merchantId} 
+        AND process_type = 'refund' 
+        AND status = 'pending' 
+        AND is_deleted = 0
+    </select>
+
+    <!-- 统计已完成退款数量 -->
+    <select id="countCompletedRefund" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM order_refund
+        WHERE merchant_id = #{merchantId} 
+        AND process_type = 'refund' 
+        AND status = 'completed' 
+        AND is_deleted = 0
+        AND DATE_FORMAT(complete_time, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')
+    </select>
+
+    <!-- 统计本月退款总额 -->
+    <select id="sumMonthlyRefundAmount" resultType="java.lang.Double">
+        SELECT COALESCE(SUM(refund_amount), 0)
+        FROM order_refund
+        WHERE merchant_id = #{merchantId} 
+        AND process_type = 'refund' 
+        AND status = 'completed' 
+        AND is_deleted = 0
+        AND DATE_FORMAT(complete_time, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')
+    </select>
+
+</mapper>

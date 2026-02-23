@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.ProductMapper">
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, merchant_id, category_id, name, description, original_price, member_price,
+        stock, stock_alert, sales, images, status, is_promotion, promotion_types,
+        need_audit, audit_status, audit_remark, auditor_id, audit_time,
+        created_at, updated_at, deleted
+    </sql>
+
+    <!-- 根据商家ID查询商品列表 -->
+    <select id="selectByMerchantId" resultType="com.naicha.hou.entity.Product">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM product
+        WHERE merchant_id = #{merchantId}
+        AND deleted = 0
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 根据分类ID查询商品列表 -->
+    <select id="selectByCategoryId" resultType="com.naicha.hou.entity.Product">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM product
+        WHERE category_id = #{categoryId}
+        AND deleted = 0
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 根据状态查询商品列表 -->
+    <select id="selectByStatus" resultType="com.naicha.hou.entity.Product">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM product
+        WHERE merchant_id = #{merchantId}
+        AND status = #{status}
+        AND deleted = 0
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 查询库存预警商品 -->
+    <select id="selectLowStockProducts" resultType="com.naicha.hou.entity.Product">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM product
+        WHERE merchant_id = #{merchantId}
+        AND stock &lt;= stock_alert
+        AND deleted = 0
+        ORDER BY (stock / stock_alert) ASC, stock ASC
+    </select>
+
+    <!-- 根据商户ID和促销标签查询商品ID列表 -->
+    <!-- promotion_types 字段是 JSON 格式，使用 JSON_CONTAINS 或 JSON_SEARCH 函数查询 -->
+    <select id="selectProductIdsByPromotionTags" resultType="java.lang.Long">
+        SELECT id
+        FROM product
+        WHERE merchant_id = #{merchantId}
+        AND deleted = 0
+        AND status = 1
+        AND promotion_types IS NOT NULL
+        AND promotion_types != ''
+        AND (
+        <foreach collection="promotionTags" item="tag" separator=" OR ">
+            JSON_CONTAINS(promotion_types, JSON_QUOTE(#{tag}))
+        </foreach>
+        )
+    </select>
+
+</mapper>
+

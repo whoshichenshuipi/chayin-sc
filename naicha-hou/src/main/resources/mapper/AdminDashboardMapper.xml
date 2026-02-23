@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.naicha.hou.mapper.AdminDashboardMapper">
+
+    <!-- 获取商家总数 -->
+    <select id="selectTotalMerchants" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM merchant
+        WHERE deleted = 0
+    </select>
+
+    <!-- 获取用户总数 -->
+    <select id="selectTotalUsers" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM user
+        WHERE deleted = 0
+    </select>
+
+    <!-- 获取订单总数（已支付及之后状态的订单） -->
+    <select id="selectTotalOrders" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM `order`
+        WHERE deleted = 0
+        AND status IN (1, 2, 3, 4, 5)  -- 已支付、已接单、制作中、已发货、已完成
+    </select>
+
+    <!-- 获取平台收入（所有已支付订单的总金额） -->
+    <select id="selectPlatformRevenue" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(pay_amount), 0)
+        FROM `order`
+        WHERE deleted = 0
+        AND status IN (1, 2, 3, 4, 5)  -- 已支付及之后状态
+    </select>
+
+    <!-- 获取用户增长趋势数据 -->
+    <select id="selectUserGrowthTrend" resultType="java.util.HashMap">
+        SELECT 
+            DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+            COUNT(*) as count
+        FROM user
+        WHERE deleted = 0
+        AND created_at >= #{startTime}
+        GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
+        ORDER BY date ASC
+    </select>
+
+    <!-- 获取订单统计趋势数据 -->
+    <select id="selectOrderStatsTrend" resultType="java.util.HashMap">
+        SELECT 
+            DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+            COUNT(*) as orderCount,
+            COALESCE(SUM(pay_amount), 0) as orderAmount
+        FROM `order`
+        WHERE deleted = 0
+        AND status IN (1, 2, 3, 4, 5)
+        AND created_at >= #{startTime}
+        GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
+        ORDER BY date ASC
+    </select>
+
+    <!-- 获取最近活动列表 -->
+    <select id="selectRecentActivities" resultType="java.util.HashMap">
+        SELECT * FROM (
+            SELECT 
+                'merchant_register' as type,
+                '新商家注册' as title,
+                CONCAT('店铺"', shop_name, '"完成注册，等待审核') as description,
+                created_at as activity_time
+            FROM merchant
+            WHERE deleted = 0
+            
+            UNION ALL
+            
+            SELECT 
+                'order_created' as type,
+                '新订单' as title,
+                CONCAT('订单号：', order_no, '，金额：', FORMAT(pay_amount, 2), '元') as description,
+                created_at as activity_time
+            FROM `order`
+            WHERE deleted = 0
+            AND status >= 1
+            
+            UNION ALL
+            
+            SELECT 
+                'user_register' as type,
+                '新用户注册' as title,
+                CONCAT('用户"', COALESCE(NULLIF(nickname, ''), username), '"完成注册') as description,
+                created_at as activity_time
+            FROM user
+            WHERE deleted = 0
+        ) AS activities
+        ORDER BY activity_time DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>
+
